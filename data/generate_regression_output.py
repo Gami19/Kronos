@@ -8,7 +8,7 @@ import torch
 from model import Kronos, KronosPredictor, KronosTokenizer
 
 
-TEST_DATA_ROOT = Path(__file__).parent
+TEST_DATA_ROOT = Path(__file__).parent / "8058.T"
 INPUT_DATA_PATH = TEST_DATA_ROOT / "regression_input.csv"
 OUTPUT_DATA_DIR = TEST_DATA_ROOT
 MAX_CTX_LEN = 512

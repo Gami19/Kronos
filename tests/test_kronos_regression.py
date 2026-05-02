@@ -9,7 +9,8 @@ from tqdm import tqdm
 
 from model import Kronos, KronosPredictor, KronosTokenizer
 
-TEST_DATA_ROOT = Path(__file__).parent / "data"
+# リポジトリの data/<銘柄>/ と同一の回帰用 CSV を参照
+TEST_DATA_ROOT = Path(__file__).resolve().parent.parent / "data" / "8058.T"
 INPUT_DATA_PATH = TEST_DATA_ROOT / "regression_input.csv"
 
 # Regression test configuration
