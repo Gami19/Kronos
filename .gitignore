@@ -1,3 +1,6 @@
+# Node (Web UI frontend)
+node_modules/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -74,3 +77,6 @@ venv.bak/
 temp/
 tmp/
 .python-version
+
+data/
+docs/

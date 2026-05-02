@@ -1,135 +1,151 @@
 # Kronos Web UI
 
-Web user interface for Kronos financial prediction model, providing intuitive graphical operation interface.
+Kronos 金融予測モデル用の Web ユーザーインターフェースです。直感的なグラフィカル操作で利用できます。
 
-## ✨ Features
+## ✨ 機能
 
-- **Multi-format data support**: Supports CSV, Feather and other financial data formats
-- **Smart time window**: Fixed 400+120 data point time window slider selection
-- **Real model prediction**: Integrated real Kronos model, supports multiple model sizes
-- **Prediction quality control**: Adjustable temperature, nucleus sampling, sample count and other parameters
-- **Multi-device support**: Supports CPU, CUDA, MPS and other computing devices
-- **Comparison analysis**: Detailed comparison between prediction results and actual data
-- **K-line chart display**: Professional financial K-line chart display
+- **複数フォーマットのデータ対応**: CSV、Feather などの金融データ形式に対応
+- **スマートな時間窓**: 固定 400+120 本の時間窓をスライダーで選択
+- **実モデルによる予測**: 実 Kronos モデルを組み込み、複数サイズのモデルに対応
+- **予測品質の調整**: 温度、核サンプリング（top_p）、サンプル数などを調整可能
+- **マルチデバイス**: CPU、CUDA、MPS などの計算デバイスに対応
+- **比較分析**: 予測結果と実データの詳細な比較
+- **ローソク足チャート**: 金融向けのローソク足表示
 
-## 🚀 Quick Start
+## 🚀 クイックスタート
 
-### Method 1: Start with Python script
+UI は **React（Vite）** でビルドした成果物を Flask が配信します。初回およびフロント変更後は必ずビルドしてください。
+
+```bash
+cd webui/frontend
+npm ci
+npm run build
+```
+
+### 方法 1: Python スクリプトで起動
 ```bash
 cd webui
 python run.py
 ```
 
-### Method 2: Start with Shell script
+### 方法 2: Shell スクリプトで起動
 ```bash
 cd webui
 chmod +x start.sh
 ./start.sh
 ```
 
-### Method 3: Start Flask application directly
+### 方法 3: Flask を直接起動
 ```bash
 cd webui
 python app.py
 ```
 
-After successful startup, visit http://localhost:7070
+起動後、ブラウザで http://localhost:7070 を開きます。
 
-## 📋 Usage Steps
+## 📁 データ配置（複数銘柄）
 
-1. **Load data**: Select financial data file from data directory
-2. **Load model**: Select Kronos model and computing device
-3. **Set parameters**: Adjust prediction quality parameters
-4. **Select time window**: Use slider to select 400+120 data point time range
-5. **Start prediction**: Click prediction button to generate results
-6. **View results**: View prediction results in charts and tables
+- **推奨**: リポジトリ直下の `data/<銘柄ID>/` に CSV / Feather を置く。銘柄 ID はディレクトリ名（東証なら yfinance と同じ `1234.T` 形式が履歴取得と対応しやすい）。
+- **レガシー**: `data/` 直下にのみファイルがある場合、Web UI では合成銘柄 **`__flat__`**（表示: ルート直下）として一覧され、従来どおり直下ファイルを選べる。
+- **API**: `GET /api/tickers` で銘柄一覧、`GET /api/data-files?ticker=<id>` でファイル一覧。`POST /api/load-data` と `POST /api/predict` の `file_path` はプロジェクトの `data/` 配下のみ許可（パストラバーサル不可）。
+- **市場履歴**: `GET /api/market-history?ticker=` は銘柄 ID をそのまま yfinance に渡す（`__flat__` のときはサーバ側で既定 `8058.T`）。
 
-## 🔧 Prediction Quality Parameters
+## 📋 利用手順
 
-### Temperature (T)
-- **Range**: 0.1 - 2.0
-- **Effect**: Controls prediction randomness
-- **Recommendation**: 1.2-1.5 for better prediction quality
+1. **銘柄とデータを選ぶ**: 銘柄セレクトで `data/<銘柄>/` を選び、ファイル一覧から金融データを選択
+2. **モデルを読み込む**: Kronos モデルと計算デバイスを選択
+3. **パラメータを設定する**: 予測品質に関するパラメータを調整
+4. **時間窓を選ぶ**: スライダーで 400+120 本の範囲を指定
+5. **予測を開始する**: 予測ボタンで結果を生成
+6. **結果を確認する**: チャートと表で予測結果を確認
 
-### Nucleus Sampling (top_p)
-- **Range**: 0.1 - 1.0
-- **Effect**: Controls prediction diversity
-- **Recommendation**: 0.95-1.0 to consider more possibilities
+## 🔧 予測品質パラメータ
 
-### Sample Count
-- **Range**: 1 - 5
-- **Effect**: Generate multiple prediction samples
-- **Recommendation**: 2-3 samples to improve quality
+### 温度（T）
+- **範囲**: 0.1 ～ 2.0
+- **効果**: 予測のランダム性を制御
+- **目安**: 品質重視なら 1.2 ～ 1.5 付近
 
-## 📊 Supported Data Formats
+### 核サンプリング（top_p）
+- **範囲**: 0.1 ～ 1.0
+- **効果**: 予測の多様性を制御
+- **目安**: 0.95 ～ 1.0 でより広い候補を考慮
 
-### Required Columns
-- `open`: Opening price
-- `high`: Highest price
-- `low`: Lowest price
-- `close`: Closing price
+### サンプル数
+- **範囲**: 1 ～ 5
+- **効果**: 複数の予測サンプルを生成
+- **目安**: 2 ～ 3 サンプルで品質向上を狙う場合が多い
 
-### Optional Columns
-- `volume`: Trading volume
-- `amount`: Trading amount (not used for prediction)
-- `timestamps`/`timestamp`/`date`: Timestamp
+## 📊 対応データ形式
 
-## 🤖 Model Support
+### 必須列
+- `open`: 始値
+- `high`: 高値
+- `low`: 安値
+- `close`: 終値
 
-- **Kronos-mini**: 4.1M parameters, lightweight fast prediction
-- **Kronos-small**: 24.7M parameters, balanced performance and speed
-- **Kronos-base**: 102.3M parameters, high quality prediction
+### 任意列
+- `volume`: 出来高
+- `amount`: 取引金額（予測には使用しない）
+- `timestamps` / `timestamp` / `date`: タイムスタンプ
 
-## 🖥️ GPU Acceleration Support
+## 🤖 モデル対応
 
-- **CPU**: General computing, best compatibility
-- **CUDA**: NVIDIA GPU acceleration, best performance
-- **MPS**: Apple Silicon GPU acceleration, recommended for Mac users
+- **Kronos-mini**: 約 4.1M パラメータ。軽量で高速な予測
+- **Kronos-small**: 約 24.7M パラメータ。性能と速度のバランス
+- **Kronos-base**: 約 102.3M パラメータ。高品質な予測
 
-## ⚠️ Notes
+## 🖥️ GPU 加速
 
-- `amount` column is not used for prediction, only for display
-- Time window is fixed at 400+120=520 data points
-- Ensure data file contains sufficient historical data
-- First model loading may require download, please be patient
+- **CPU**: 汎用計算。互換性が最も高い
+- **CUDA**: NVIDIA GPU。性能面で有利なことが多い
+- **MPS**: Apple Silicon GPU。Mac 利用時の選択肢
 
-## 🔍 Comparison Analysis
+## ⚠️ 注意事項
 
-The system automatically provides comparison analysis between prediction results and actual data, including:
-- Price difference statistics
-- Error analysis
-- Prediction quality assessment
+- `amount` 列は予測には使わず表示用です
+- 時間窓は 400+120=520 本に固定されています
+- データファイルには十分な履歴が含まれている必要があります
+- 初回のモデル読み込みではダウンロードが発生する場合があります
 
-## 🛠️ Technical Architecture
+## 🔍 比較分析
 
-- **Backend**: Flask + Python
-- **Frontend**: HTML + CSS + JavaScript
-- **Charts**: Plotly.js
-- **Data processing**: Pandas + NumPy
-- **Model**: Hugging Face Transformers
+予測と実データが揃う場合、次のような比較情報を自動表示します。
+- 価格差の統計
+- 誤差の分析
+- 予測品質の目安
 
-## 📝 Troubleshooting
+## 🛠️ 技術構成
 
-### Common Issues
-1. **Port occupied**: Modify port number in app.py
-2. **Missing dependencies**: Run `pip install -r requirements.txt`
-3. **Model loading failed**: Check network connection and model ID
-4. **Data format error**: Ensure data column names and format are correct
+- **バックエンド**: Flask + Python
+- **フロントエンド**: React + TypeScript（Vite ビルド、`frontend/dist` を Flask が配信）
+- **チャート**: Apache ECharts（メインローソク）、バックエンドの Plotly `chart` は保存のみで UI では未使用
+- **データ処理**: Pandas + NumPy
+- **モデル**: Hugging Face Transformers
 
-### Log Viewing
-Detailed runtime information will be displayed in the console at startup, including model status and error messages.
+## 📝 トラブルシューティング
 
-## 📄 License
+### よくある問題
+1. **ポートが使用中**: `app.py` のポート番号を変更する
+2. **依存関係不足**: `pip install -r requirements.txt` を実行する
+3. **モデル読み込み失敗**: ネットワークとモデル ID を確認する
+4. **データ形式エラー**: 列名と形式が要件を満たしているか確認する
 
-This project follows the license terms of the original Kronos project.
+### ログの見方
 
-## 🤝 Contributing
+起動時にコンソールへ実行時情報（モデル状態やエラーなど）が表示されます。
 
-Welcome to submit Issues and Pull Requests to improve this Web UI!
+## 📄 ライセンス
 
-## 📞 Support
+本プロジェクトは元の Kronos プロジェクトのライセンス条件に従います。
 
-If you have questions, please check:
-1. Project documentation
+## 🤝 コントリビューション
+
+Issue や Pull Request での改善提案を歓迎します。
+
+## 📞 サポート
+
+疑問がある場合は次を確認してください。
+1. プロジェクトのドキュメント
 2. GitHub Issues
-3. Console error messages
+3. コンソールのエラーメッセージ
