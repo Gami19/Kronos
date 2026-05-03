@@ -12,7 +12,7 @@ if ! command -v python3 &> /dev/null; then
 fi
 
 # カレントディレクトリ確認
-if [ ! -f "app.py" ]; then
+if [ ! -f "run.py" ]; then
     echo "❌ webui ディレクトリでこのスクリプトを実行してください"
     exit 1
 fi
@@ -44,4 +44,4 @@ echo "アクセス URL: http://localhost:7070"
 echo "停止するには Ctrl+C を押してください"
 echo ""
 
-python3 app.py
+python3 run.py

@@ -92,6 +92,8 @@ We release a family of pre-trained models with varying capacities to suit differ
 pip install -r requirements.txt
 ```
 
+Web UI でのファインチューン・バックテスト一体フロー（`/finetune`）の手順はリポジトリ内の **[webui/README.md](webui/README.md)**（「`/finetune` ウィザード」節）を参照してください。
+
 ### 📈 Making Forecasts
 
 Forecasting with Kronos is straightforward using the `KronosPredictor` class. It handles data preprocessing, normalization, prediction, and inverse normalization, allowing you to get from raw data to forecasts in just a few lines of code.

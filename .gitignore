@@ -79,4 +79,6 @@ tmp/
 .python-version
 
 data/
+finetune_csv/runs/
 docs/
+.pytest_cache/

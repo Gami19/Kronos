@@ -40,3 +40,18 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   }
   return data
 }
+
+/** multipart/form-data（ブラウザが boundary 付き Content-Type を付与） */
+export async function apiPostFormData<T>(path: string, formData: FormData): Promise<T> {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { Accept: 'application/json' },
+    body: formData,
+  })
+  const data = await parseJsonResponse<T>(res)
+  if (!res.ok) {
+    const errBody = data as ApiErrorBody
+    throw new Error(errBody.error ?? `HTTP ${res.status}`)
+  }
+  return data
+}

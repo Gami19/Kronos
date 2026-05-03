@@ -75,11 +75,10 @@ def main():
     # Flask アプリ起動
     print("\n🌐 Web サーバを起動しています…")
     
-    os.environ['FLASK_APP'] = 'app.py'
-    os.environ['FLASK_ENV'] = 'development'
-    
     try:
-        from app import app
+        from backend.app_factory import create_app
+
+        app = create_app()
         print("✅ Web サーバの起動に成功しました")
         print(f"🌐 アクセス URL: http://localhost:7070")
         print("💡 ヒント: サーバを止めるには Ctrl+C を押してください")

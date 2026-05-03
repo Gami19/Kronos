@@ -1,6 +1,7 @@
-import { apiGet, apiPost } from './client'
+import { apiGet, apiPost, apiPostFormData } from './client'
 import type {
   AvailableModelsResponse,
+  ImportMarketResponse,
   LoadDataResponse,
   LoadModelResponse,
   MarketHistoryResponse,
@@ -11,6 +12,16 @@ import type {
   PredictResponse,
   DataFileMeta,
   TickersResponse,
+  UploadDataResponse,
+  ValidateDataResponse,
+  CreateTrainJobRequest,
+  CreateTrainJobResponse,
+  ListTrainJobsResponse,
+  GetTrainJobResponse,
+  TrainJobLogResponse,
+  LoadModelRequest,
+  BacktestRunRequest,
+  BacktestRunResponse,
 } from './types'
 
 export function getModelStatus(): Promise<ModelStatusResponse> {
@@ -42,12 +53,53 @@ export function loadData(filePath: string): Promise<LoadDataResponse> {
   return apiPost<LoadDataResponse>('/api/load-data', { file_path: filePath })
 }
 
-export function loadModel(body: { model_key: string; device: string }): Promise<LoadModelResponse> {
+export function importMarket(body: {
+  ticker_id: string
+  interval?: string
+  period?: string
+}): Promise<ImportMarketResponse> {
+  return apiPost<ImportMarketResponse>('/api/data/import-market', body)
+}
+
+export function uploadDataFile(tickerId: string, file: File): Promise<UploadDataResponse> {
+  const fd = new FormData()
+  fd.set('ticker_id', tickerId)
+  fd.set('file', file)
+  return apiPostFormData<UploadDataResponse>('/api/data/upload', fd)
+}
+
+export function validateDataFile(filePath: string): Promise<ValidateDataResponse> {
+  return apiPost<ValidateDataResponse>('/api/data/validate', { file_path: filePath })
+}
+
+export function createTrainJob(body: CreateTrainJobRequest): Promise<CreateTrainJobResponse> {
+  return apiPost<CreateTrainJobResponse>('/api/train/jobs', body)
+}
+
+export function listTrainJobs(): Promise<ListTrainJobsResponse> {
+  return apiGet<ListTrainJobsResponse>('/api/train/jobs')
+}
+
+export function getTrainJob(jobId: string): Promise<GetTrainJobResponse> {
+  return apiGet<GetTrainJobResponse>(`/api/train/jobs/${encodeURIComponent(jobId)}`)
+}
+
+export function getTrainJobLog(jobId: string, tailLines = 200): Promise<TrainJobLogResponse> {
+  return apiGet<TrainJobLogResponse>(
+    `/api/train/jobs/${encodeURIComponent(jobId)}/log?tail_lines=${encodeURIComponent(String(tailLines))}`,
+  )
+}
+
+export function loadModel(body: LoadModelRequest): Promise<LoadModelResponse> {
   return apiPost<LoadModelResponse>('/api/load-model', body)
 }
 
 export function predict(body: PredictRequest): Promise<PredictResponse> {
   return apiPost<PredictResponse>('/api/predict', body)
+}
+
+export function runBacktest(body: BacktestRunRequest): Promise<BacktestRunResponse> {
+  return apiPost<BacktestRunResponse>('/api/backtest/run', body)
 }
 
 export function marketHistory(params: {

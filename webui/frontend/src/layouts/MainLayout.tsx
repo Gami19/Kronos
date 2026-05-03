@@ -11,6 +11,9 @@ export default function MainLayout() {
         <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
           ワークスペース
         </NavLink>
+        <NavLink to="/finetune" className={({ isActive }) => (isActive ? 'active' : '')}>
+          ファインチューン
+        </NavLink>
         <NavLink to="/history" className={({ isActive }) => (isActive ? 'active' : '')}>
           過去結果
         </NavLink>

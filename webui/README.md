@@ -35,13 +35,28 @@ chmod +x start.sh
 ./start.sh
 ```
 
-### 方法 3: Flask を直接起動
+### 方法 3: モジュールとして直接起動（上級者向け）
 ```bash
 cd webui
-python app.py
+python -m backend.application
 ```
+（`backend/application.py` 内の `build_flask_app` と `if __name__ == '__main__'` を使います。未ビルドの `frontend/dist` では UI が 503 になり得ます。）
 
 起動後、ブラウザで http://localhost:7070 を開きます。
+
+### 推奨起動（`run.py`）
+
+開発・検証では **`python run.py` を第一推奨**とします（[バックエンド移行計画](../docs/backendフォルダ移行計画.md) の前提とも一致）。`run.py` は依存の有無と `frontend/dist/index.html` の存在を起動前に確認し、未ビルドのときに案内を出します。
+
+## ディレクトリ構成（`frontend` / `backend`）
+
+| パス | 役割 |
+|------|------|
+| **`frontend/`** | React + TypeScript（Vite）のソース。`npm run build` で **`frontend/dist/`** に静的成果物を出力し、Flask がそれを配信します。 |
+| **`backend/`** | Flask 周りの整理用レイヤー。`app_factory.py` の `create_app()` がエントリ。`application.py` に `build_flask_app` と API ハンドラ本体。`routes/` に Blueprint（`/api` 等）、`lib/` に Flask 非依存の純ロジック、`services/` にビジネスロジック、`schemas/` に Pydantic によるリクエスト形の定義があります。 |
+| **`run.py`** | 起動前チェックとブラウザオープンなどのエントリ用スクリプト。内部で `create_app()` を呼び出します。 |
+
+移行のマイルストーン（フェーズ0〜5の全体像）は [docs/backendフォルダ移行計画.md](../docs/backendフォルダ移行計画.md) を参照してください。
 
 ## 📁 データ配置（複数銘柄）
 
@@ -58,6 +73,21 @@ python app.py
 4. **時間窓を選ぶ**: スライダーで 400+120 本の範囲を指定
 5. **予測を開始する**: 予測ボタンで結果を生成
 6. **結果を確認する**: チャートと表で予測結果を確認
+
+## `/finetune` ウィザード（初回セットアップ〜バックテスト）
+
+ファインチューン用の一連操作は **`http://localhost:7070/finetune`** のウィザードで行います。
+
+1. `cd webui/frontend && npm ci && npm run build` でフロントをビルドする。
+2. `cd webui && python run.py` で Flask を起動する。
+3. ブラウザで `/finetune` を開く。
+4. **ステップ1 データ** → **2 モデル**（`POST /api/load-model`）→ **3 学習**（任意）→ **4 推論パラメータ** → **5 予測**（`POST /api/predict`）→ **6 バックテスト**（`POST /api/backtest/run`）の順で進める。
+
+**同一 Python 環境（venv）**: WebUI の Flask と、`finetune_csv` の学習ジョブ（`train_sequential.py`）は **同じ venv** で動かす前提です（Phase 0 の運用）。別環境にすると依存やパスがずれます。
+
+**Apple Silicon（M4 等）**: 学習・推論の `device` に **`mps`** を選べます。PyTorch が MPS を認識していること、およびメモリ不足に注意してください。
+
+**ステップガード**: ステッパーは前提を満たさない先のステップは無効化されます（例: 推論パラメータ・予測へはモデル読込とプレビュー読込・十分な行数が必要）。無効なボタンにマウスを載せると理由のツールチップが出ます。
 
 ## 🔧 予測品質パラメータ
 
@@ -126,7 +156,7 @@ python app.py
 ## 📝 トラブルシューティング
 
 ### よくある問題
-1. **ポートが使用中**: `app.py` のポート番号を変更する
+1. **ポートが使用中**: `run.py` または `backend/application.py` の末尾 `app.run(..., port=7070)` のポートを変更する
 2. **依存関係不足**: `pip install -r requirements.txt` を実行する
 3. **モデル読み込み失敗**: ネットワークとモデル ID を確認する
 4. **データ形式エラー**: 列名と形式が要件を満たしているか確認する

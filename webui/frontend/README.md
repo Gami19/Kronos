@@ -12,7 +12,7 @@ npm run build
 
 ## 開発モード
 
-1. `cd webui && python app.py`（7070）
+1. `cd webui && python run.py`（7070）
 2. `cd webui/frontend && npm run dev`（5173）
 
 ## メインチャート（Apache ECharts）

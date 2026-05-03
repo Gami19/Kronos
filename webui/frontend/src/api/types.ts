@@ -103,6 +103,119 @@ export interface LoadDataResponse {
   error?: string
 }
 
+/** POST /api/data/import-market */
+export interface ImportMarketResponse {
+  success: boolean
+  ticker_id?: string
+  file_path?: string
+  message?: string
+  error?: string
+}
+
+/** POST /api/data/upload */
+export interface UploadDataResponse {
+  success: boolean
+  ticker_id?: string
+  file_path?: string
+  filename?: string
+  error?: string
+}
+
+/** POST /api/data/validate の data_info（サマリのみ） */
+export interface ValidateDataInfoSummary {
+  rows: number
+  columns: string[]
+  start_date?: string | null
+  end_date?: string | null
+}
+
+/** POST /api/data/validate（HTTP 200 + valid で成否） */
+export interface ValidateDataResponse {
+  valid: boolean
+  error?: string
+  file_path?: string | null
+  message?: string
+  data_info?: ValidateDataInfoSummary
+}
+
+/** POST /api/train/jobs */
+export interface CreateTrainJobRequest {
+  data_path: string
+  pretrained_tokenizer?: string
+  pretrained_predictor?: string
+  device?: 'cuda' | 'cpu' | 'mps'
+  tokenizer_learning_rate?: number
+  predictor_learning_rate?: number
+  tokenizer_epochs?: number
+  basemodel_epochs?: number
+  batch_size?: number
+  log_interval?: number
+  num_workers?: number
+  seed?: number
+  lookback_window?: number
+  predict_window?: number
+  max_context?: number
+  clip?: number
+  train_ratio?: number
+  val_ratio?: number
+  test_ratio?: number
+  accumulation_steps?: number
+  experiment_name?: string
+  experiment_description?: string
+  skip_existing?: boolean
+  skip_tokenizer?: boolean
+  skip_basemodel?: boolean
+  device_id?: number
+}
+
+export interface TrainJobMeta {
+  job_id: string
+  status?: string
+  created_at?: string
+  updated_at?: string
+  data_path?: string
+  train_last_timestamp?: string
+  config_path?: string
+  exit_code?: number | null
+  tokenizer_best_model_path?: string | null
+  basemodel_best_model_path?: string | null
+  error_message?: string | null
+  device?: string
+  pid?: number
+}
+
+export interface CreateTrainJobResponse {
+  success: boolean
+  job_id?: string
+  meta?: Partial<TrainJobMeta>
+  error?: string
+}
+
+export interface TrainJobListItem {
+  job_id: string
+  status: string
+  created_at?: string
+  exit_code?: number | null
+}
+
+export interface ListTrainJobsResponse {
+  success: boolean
+  jobs: TrainJobListItem[]
+}
+
+export interface GetTrainJobResponse {
+  success: boolean
+  meta?: TrainJobMeta
+  error?: string
+}
+
+export interface TrainJobLogResponse {
+  success: boolean
+  job_id?: string
+  log?: string
+  error?: string
+}
+
 /** GET /api/market-history */
 export interface MarketHistoryResponse {
   success: boolean
@@ -124,11 +237,42 @@ export interface OhlcRow {
   amount?: number | null
 }
 
+/** POST /api/load-model（model_key / train_job_id / local_* のいずれか一つ） */
+export type LoadModelRequest =
+  | {
+      device: string
+      model_key: string
+      train_job_id?: undefined
+      local_tokenizer_path?: undefined
+      local_predictor_path?: undefined
+      max_context?: undefined
+    }
+  | {
+      device: string
+      train_job_id: string
+      model_key?: undefined
+      local_tokenizer_path?: undefined
+      local_predictor_path?: undefined
+      max_context?: number
+    }
+  | {
+      device: string
+      local_tokenizer_path: string
+      local_predictor_path: string
+      model_key?: undefined
+      train_job_id?: undefined
+      max_context?: number
+    }
+
 /** POST /api/load-model */
 export interface LoadModelResponse {
   success: boolean
   message?: string
   error?: string
+  load_source?: 'hf' | 'train_job' | 'local'
+  train_job_id?: string
+  tokenizer_path?: string
+  predictor_path?: string
   model_info?: {
     name: string
     params: string
@@ -155,6 +299,48 @@ export interface PredictResponse {
   prediction_results?: OhlcRow[]
   actual_data?: OhlcRow[]
   has_comparison?: boolean
+  message?: string
+  error?: string
+}
+
+/** POST /api/backtest/run（v1.0 同期） */
+export interface BacktestRunRequest {
+  backtest_spec_version: '1.0'
+  data_path: string
+  train_last_timestamp: string
+  eval_start?: string
+  eval_end?: string
+  train_job_id?: string
+  local_tokenizer_path?: string
+  local_predictor_path?: string
+  lookback?: number
+  pred_len?: number
+  T?: number
+  top_p?: number
+  sample_count?: number
+  device?: string
+  max_context?: number
+}
+
+export interface BacktestMetricsV1 {
+  strategy_cumulative_return: number
+  bh_cumulative_return: number
+  strategy_max_drawdown: number
+  bh_max_drawdown: number
+  trade_count: number
+}
+
+export interface BacktestSeriesV1 {
+  timestamps: string[]
+  strategy_equity: number[]
+  bh_equity: number[]
+}
+
+export interface BacktestRunResponse {
+  success: boolean
+  backtest_spec_version?: string
+  metrics?: BacktestMetricsV1
+  series?: BacktestSeriesV1
   message?: string
   error?: string
 }

@@ -2,7 +2,7 @@
  * tree-shaking 用に ECharts コンポーネントを明示登録する
  */
 import * as echarts from 'echarts/core'
-import { CandlestickChart } from 'echarts/charts'
+import { CandlestickChart, LineChart } from 'echarts/charts'
 import {
   TitleComponent,
   TooltipComponent,
@@ -19,6 +19,7 @@ echarts.use([
   DataZoomComponent,
   LegendComponent,
   CandlestickChart,
+  LineChart,
   CanvasRenderer,
 ])
 

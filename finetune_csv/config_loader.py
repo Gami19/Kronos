@@ -173,6 +173,7 @@ class CustomFinetuneConfig:
         
         device_config = self.loader.get_device_config()
         self.use_cuda = device_config.get('use_cuda', True)
+        self.use_mps = device_config.get('use_mps', False)
         self.device_id = device_config.get('device_id', 0)
         
         distributed_config = self.loader.get_distributed_config()
@@ -259,6 +260,7 @@ class CustomFinetuneConfig:
         print(f"Train tokenizer: {self.train_tokenizer}")
         print(f"Train basemodel: {self.train_basemodel}")
         print(f"Skip existing: {self.skip_existing}")
+        print(f"use_cuda: {self.use_cuda}, use_mps: {getattr(self, 'use_mps', False)}")
         print(f"Use pre-trained tokenizer: {self.pre_trained_tokenizer}")
         print(f"Use pre-trained predictor: {self.pre_trained_predictor}")
         print(f"Base save path: {self.base_save_path}")

@@ -27,12 +27,20 @@ class SequentialTrainer:
         self.config.print_config_summary()
     
     def _setup_device(self):
-        if self.config.use_cuda and torch.cuda.is_available():
+        use_mps = getattr(self.config, 'use_mps', False)
+        if use_mps:
+            if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+                device = torch.device('mps')
+            else:
+                if self.rank == 0:
+                    print('use_mps=True ですが MPS が利用できないため CPU にフォールバックします')
+                device = torch.device('cpu')
+        elif self.config.use_cuda and torch.cuda.is_available():
             torch.cuda.set_device(self.local_rank)
             device = torch.device(f"cuda:{self.local_rank}")
         else:
             device = torch.device("cpu")
-        
+
         if self.rank == 0:
             print(f"Using device: {device} (rank={self.rank}, world_size={self.world_size}, local_rank={self.local_rank})")
         return device
