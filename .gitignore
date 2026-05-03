@@ -82,3 +82,8 @@ data/
 finetune_csv/runs/
 docs/
 .pytest_cache/
+
+.env.local
+
+kronos-small/
+tokenizer-base/

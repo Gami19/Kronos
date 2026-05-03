@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from backend.env_bootstrap import load_dotenv_files
+
+load_dotenv_files()
+
 import os
 import warnings
 
