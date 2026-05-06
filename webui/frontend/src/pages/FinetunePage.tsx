@@ -40,6 +40,12 @@ import { useTicker } from '../context/TickerContext'
 import { formatUserFacingError } from '../utils/formatError'
 import { canNavigateToFinetuneStep, type FinetuneWizardGuardCtx } from '../utils/finetuneWizardGuards'
 import { mergeOhlcSeries } from '../utils/ohlcMerge'
+import {
+  DEFAULT_TEST_RATIO,
+  DEFAULT_TRAIN_RATIO,
+  DEFAULT_VAL_RATIO,
+  trainWindowClientMessage,
+} from '../utils/trainWindowGuards'
 
 type Banner = { kind: 'success' | 'error' | 'info' | 'warning'; text: string }
 
@@ -323,10 +329,35 @@ export default function FinetunePage() {
       showBanner({ kind: 'warning', text: '学習用 data_path を入力してください' })
       return
     }
+    const trainPath = dataPathTrain.trim()
+    let rowHint: number | undefined
+    if (loaded?.success && loaded.data_info?.rows != null && filePath.trim() === trainPath) {
+      rowHint = loaded.data_info.rows
+    } else if (
+      validateResult?.valid &&
+      validateResult.data_info?.rows != null &&
+      (validateResult.file_path?.trim() === trainPath || validateResult.file_path === trainPath)
+    ) {
+      rowHint = validateResult.data_info.rows
+    }
+    if (rowHint != null) {
+      const msg = trainWindowClientMessage(
+        rowHint,
+        lookbackWindow,
+        predictWindow,
+        DEFAULT_TRAIN_RATIO,
+        DEFAULT_VAL_RATIO,
+        DEFAULT_TEST_RATIO,
+      )
+      if (msg) {
+        showBanner({ kind: 'warning', text: msg })
+        return
+      }
+    }
     setBusy(true)
     try {
       const res = await createTrainJob({
-        data_path: dataPathTrain.trim(),
+        data_path: trainPath,
         pretrained_tokenizer: pretrainedTokenizer.trim() || undefined,
         pretrained_predictor: pretrainedPredictor.trim() || undefined,
         device: trainDevice,
@@ -337,6 +368,9 @@ export default function FinetunePage() {
         batch_size: batchSize,
         lookback_window: lookbackWindow,
         predict_window: predictWindow,
+        train_ratio: DEFAULT_TRAIN_RATIO,
+        val_ratio: DEFAULT_VAL_RATIO,
+        test_ratio: DEFAULT_TEST_RATIO,
         skip_existing: skipExisting,
         skip_tokenizer: skipTokenizer,
         skip_basemodel: skipBasemodel,
@@ -1016,8 +1050,8 @@ export default function FinetunePage() {
                     </tbody>
                   </table>
                 </div>
-                <h3>軽量ローソク（末尾 200 本）</h3>
-                <OhlcCandlestickPreview rows={ohlcRows} tail={200} />
+                <h3>ローソクプレビュー（全件・下スライダーで移動）</h3>
+                <OhlcCandlestickPreview rows={ohlcRows} />
               </>
             )}
             {busy && <p className="msg-muted">処理中…</p>}

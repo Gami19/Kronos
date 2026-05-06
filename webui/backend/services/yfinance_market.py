@@ -8,6 +8,8 @@ from typing import Any
 import pandas as pd
 import yfinance as yf
 
+from model.kronos_amount import amount_log1p_typical_volume_series
+
 # GET /api/market-history: query validation (aligned with frontend intervals/periods)
 MARKET_HISTORY_ALLOWED_INTERVALS = frozenset(
     {
@@ -144,10 +146,15 @@ def fetch_yfinance_hist_df(
 
 
 def historical_to_api_rows(hist: pd.DataFrame) -> list[dict[str, Any]]:
-    """Convert yfinance history DataFrame to API row dicts (timestamp, OHLC, volume)."""
+    """Convert yfinance history DataFrame to API row dicts (timestamp, OHLC, volume, amount)."""
+    vol_series = hist["Volume"] if "Volume" in hist.columns else pd.Series(0.0, index=hist.index)
+    amt_series = amount_log1p_typical_volume_series(
+        hist["Open"], hist["High"], hist["Low"], hist["Close"], vol_series
+    )
     rows: list[dict[str, Any]] = []
-    for idx, row in hist.iterrows():
+    for j, (idx, row) in enumerate(hist.iterrows()):
         ts = idx.to_pydatetime() if hasattr(idx, "to_pydatetime") else idx
+        vol = float(row["Volume"]) if "Volume" in row and pd.notna(row["Volume"]) else None
         rows.append(
             {
                 "timestamp": ts.isoformat() if hasattr(ts, "isoformat") else str(ts),
@@ -155,9 +162,8 @@ def historical_to_api_rows(hist: pd.DataFrame) -> list[dict[str, Any]]:
                 "high": float(row["High"]),
                 "low": float(row["Low"]),
                 "close": float(row["Close"]),
-                "volume": float(row["Volume"])
-                if "Volume" in row and pd.notna(row["Volume"])
-                else None,
+                "volume": vol,
+                "amount": float(amt_series.iloc[j]),
             }
         )
     return rows
@@ -180,4 +186,9 @@ def hist_to_import_ohlcv_dataframe(hist: pd.DataFrame) -> pd.DataFrame:
     )
     if "Volume" in hist.columns:
         out_df["volume"] = pd.to_numeric(hist["Volume"], errors="coerce")
+    else:
+        out_df["volume"] = 0.0
+    out_df["amount"] = amount_log1p_typical_volume_series(
+        out_df["open"], out_df["high"], out_df["low"], out_df["close"], out_df["volume"]
+    )
     return out_df.dropna(subset=["open", "high", "low", "close"])

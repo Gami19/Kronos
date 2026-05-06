@@ -19,6 +19,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 sys.path.append('../')
 from model import Kronos, KronosTokenizer, KronosPredictor
+from model.kronos_amount import amount_log1p_typical_volume_series
 from config_loader import CustomFinetuneConfig
 
 
@@ -46,12 +47,28 @@ class CustomKlineDataset(Dataset):
         self._split_data_by_time()
         
         self.n_samples = len(self.data) - self.window + 1
-            
+
+        if self.n_samples < 1:
+            raise ValueError(
+                f"CustomKlineDataset({data_type!r}): スライディング窓に対してデータが不足しています。"
+                f" split 後の行数={len(self.data)}, window={self.window} "
+                f"(lookback={lookback_window}, predict={predict_window}), "
+                f"n_samples={self.n_samples}。"
+                f" train_ratio/val_ratio を調整するか、データ本数を増やしてください。"
+            )
+
         print(f"[{data_type.upper()}] Data length: {len(self.data)}, Available samples: {self.n_samples}")
     
     def _load_and_preprocess_data(self):
         df = pd.read_csv(self.data_path)
-        
+
+        if 'volume' not in df.columns:
+            df['volume'] = 0.0
+        if 'amount' not in df.columns:
+            df['amount'] = amount_log1p_typical_volume_series(
+                df['open'], df['high'], df['low'], df['close'], df['volume']
+            )
+
         df['timestamps'] = pd.to_datetime(df['timestamps'])
         df = df.sort_values('timestamps').reset_index(drop=True)
         
@@ -67,7 +84,7 @@ class CustomKlineDataset(Dataset):
         
         if self.data.isnull().any().any():
             print("Warning: Missing values found in data, performing forward fill")
-            self.data = self.data.fillna(method='ffill')
+            self.data = self.data.ffill()
         
         print(f"Original data time range: {self.timestamps.min()} to {self.timestamps.max()}")
         print(f"Original data total length: {len(df)} records")
