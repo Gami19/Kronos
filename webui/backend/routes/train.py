@@ -15,6 +15,7 @@ from backend.services import checkpoints
 from backend.services import data_io
 from backend.services import data_layout as dl
 from backend.services import train_jobs_ops as tjo
+from backend.services import train_split_validation as tsv
 
 def train_jobs_create():
     """finetune_csv 学習ジョブを投入する（YAML 生成 → train_sequential サブプロセス）"""
@@ -36,7 +37,13 @@ def train_jobs_create():
     if not ok_pp:
         return jsonify({'success': False, 'error': err_pp}), 400
 
-    train_last_ts, ts_err = data_io.compute_train_last_timestamp_iso(data_path)
+    # Web 経路では data_io と同一の前処理後の行数で検証する（finetune の生 read_csv+ffill とは
+    # NaN 行の扱いでわずかに差が出る場合がある）。
+    df_train, load_err = data_io.load_data_file(data_path)
+    if load_err:
+        return jsonify({'success': False, 'error': f'学習データの読み込みに失敗: {load_err}'}), 400
+
+    train_last_ts, ts_err = data_io.dataframe_max_timestamp_iso(df_train)
     if ts_err:
         return jsonify({'success': False, 'error': f'train_last_timestamp 算出に失敗: {ts_err}'}), 400
 
@@ -81,13 +88,25 @@ def train_jobs_create():
     predict_window = int(body.get('predict_window', 48))
     max_context = int(body.get('max_context', lookback_window))
     clip = float(body.get('clip', 5.0))
-    train_ratio = float(body.get('train_ratio', 0.9))
-    val_ratio = float(body.get('val_ratio', 0.1))
+    train_ratio = float(body.get('train_ratio', 0.85))
+    val_ratio = float(body.get('val_ratio', 0.15))
     test_ratio = float(body.get('test_ratio', 0.0))
     accumulation_steps = int(body.get('accumulation_steps', 1))
     experiment_name = (body.get('experiment_name') or 'webui_train_job').strip() or 'webui_train_job'
     experiment_description = (body.get('experiment_description') or '').strip()
     device_id = int(body.get('device_id', 0))
+
+    n_rows = len(df_train)
+    ok_win, win_err = tsv.validate_train_job_window_vs_split(
+        n_rows,
+        lookback_window,
+        predict_window,
+        train_ratio,
+        val_ratio,
+        test_ratio,
+    )
+    if not ok_win:
+        return jsonify({'success': False, 'error': win_err}), 400
 
     job_id = uuid.uuid4().hex
     if not PREDICTION_RESULT_ID_PATTERN.fullmatch(job_id):

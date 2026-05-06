@@ -18,6 +18,8 @@ Your CSV file must contain the following columns:
 
 (volume and amount can be 0 if not available)
 
+If `amount` is omitted (e.g. yfinance OHLCV exports), the training loader synthesizes it as **`log1p((high + low + close) / 3 * volume)`** (same as Web UI market import and `KronosPredictor` when `amount` is missing).
+
 ### Sample Data Format
 
 | timestamps | open | close | high | low | volume | amount |

@@ -437,8 +437,8 @@ export default function WorkspacePage() {
                   </tbody>
                 </table>
               </div>
-              <h3>軽量ローソク（末尾 200 本）</h3>
-              <OhlcCandlestickPreview rows={ohlcRows} tail={200} />
+              <h3>ローソクプレビュー（全件・下スライダーで移動）</h3>
+              <OhlcCandlestickPreview rows={ohlcRows} />
             </>
           )}
         </section>

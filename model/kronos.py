@@ -9,6 +9,8 @@ from tqdm import trange
 sys.path.append("../")
 from model.module import *
 
+from .kronos_amount import amount_log1p_typical_volume_series
+
 
 class KronosTokenizer(nn.Module, PyTorchModelHubMixin):
     """
@@ -526,10 +528,11 @@ class KronosPredictor:
 
         df = df.copy()
         if self.vol_col not in df.columns:
-            df[self.vol_col] = 0.0  # Fill missing volume with zeros
-            df[self.amt_vol] = 0.0  # Fill missing amount with zeros
-        if self.amt_vol not in df.columns and self.vol_col in df.columns:
-            df[self.amt_vol] = df[self.vol_col] * df[self.price_cols].mean(axis=1)
+            df[self.vol_col] = 0.0
+        if self.amt_vol not in df.columns:
+            df[self.amt_vol] = amount_log1p_typical_volume_series(
+                df["open"], df["high"], df["low"], df["close"], df[self.vol_col]
+            )
 
         if df[self.price_cols + [self.vol_col, self.amt_vol]].isnull().values.any():
             raise ValueError("Input DataFrame contains NaN values in price or volume columns.")
@@ -604,9 +607,10 @@ class KronosPredictor:
             df = df.copy()
             if self.vol_col not in df.columns:
                 df[self.vol_col] = 0.0
-                df[self.amt_vol] = 0.0
-            if self.amt_vol not in df.columns and self.vol_col in df.columns:
-                df[self.amt_vol] = df[self.vol_col] * df[self.price_cols].mean(axis=1)
+            if self.amt_vol not in df.columns:
+                df[self.amt_vol] = amount_log1p_typical_volume_series(
+                    df["open"], df["high"], df["low"], df["close"], df[self.vol_col]
+                )
 
             if df[self.price_cols + [self.vol_col, self.amt_vol]].isnull().values.any():
                 raise ValueError(f"DataFrame at index {i} contains NaN values in price or volume columns.")

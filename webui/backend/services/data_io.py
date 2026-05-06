@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pandas as pd
 
+from model.kronos_amount import amount_log1p_typical_volume_series
+
 
 def load_data_file(file_path):
     """データファイルを読み込む。戻り値: (df, None) または (None, error_message)。"""
@@ -31,10 +33,16 @@ def load_data_file(file_path):
         for col in ["open", "high", "low", "close"]:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
-        if "volume" in df.columns:
+        if "volume" not in df.columns:
+            df["volume"] = 0.0
+        else:
             df["volume"] = pd.to_numeric(df["volume"], errors="coerce")
 
-        if "amount" in df.columns:
+        if "amount" not in df.columns:
+            df["amount"] = amount_log1p_typical_volume_series(
+                df["open"], df["high"], df["low"], df["close"], df["volume"]
+            )
+        else:
             df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
 
         df = df.dropna()
@@ -44,11 +52,8 @@ def load_data_file(file_path):
         return None, f"ファイルの読み込みに失敗しました: {str(e)}"
 
 
-def compute_train_last_timestamp_iso(data_path):
-    """学習 CSV 全体の timestamps 最大値（ISO 文字列）。"""
-    df, err = load_data_file(data_path)
-    if err:
-        return None, err
+def dataframe_max_timestamp_iso(df):
+    """load_data_file で得た DataFrame の timestamps 最大値（ISO 文字列）。"""
     if "timestamps" not in df.columns or len(df) == 0:
         return None, "timestamps 列がないか、データが空です"
     ts_max = df["timestamps"].max()
@@ -59,6 +64,14 @@ def compute_train_last_timestamp_iso(data_path):
     else:
         s = str(ts_max)
     return s, None
+
+
+def compute_train_last_timestamp_iso(data_path):
+    """学習 CSV 全体の timestamps 最大値（ISO 文字列）。内部で load_data_file を1回呼ぶ。"""
+    df, err = load_data_file(data_path)
+    if err:
+        return None, err
+    return dataframe_max_timestamp_iso(df)
 
 
 def dataframe_to_ohlc_rows(df):

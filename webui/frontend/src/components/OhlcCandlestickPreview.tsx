@@ -7,22 +7,56 @@ import type { EChartsOption } from 'echarts'
 
 interface OhlcCandlestickPreviewProps {
   rows: OhlcRow[]
+  /** 指定時のみ末尾 `tail` 本に切り詰め。省略時は全行（dataZoom で範囲変更） */
   tail?: number
 }
 
-export default function OhlcCandlestickPreview({ rows, tail = 200 }: OhlcCandlestickPreviewProps) {
-  const slice = useMemo(() => rows.slice(-tail), [rows, tail])
+const ZOOM_TAIL_THRESHOLD = 500
+const ZOOM_DEFAULT_START = 85
+const ZOOM_DEFAULT_END = 100
+
+export default function OhlcCandlestickPreview({ rows, tail }: OhlcCandlestickPreviewProps) {
+  const slice = useMemo(
+    () => (tail === undefined ? rows : rows.slice(-tail)),
+    [rows, tail],
+  )
   const data = useMemo(() => rowsToSingleSeries(slice), [slice])
 
   const option = useMemo((): EChartsOption => {
+    const n = slice.length
+    const zoomToEnd = n > ZOOM_TAIL_THRESHOLD
+    const dzStart = zoomToEnd ? ZOOM_DEFAULT_START : 0
+    const dzEnd = zoomToEnd ? ZOOM_DEFAULT_END : 100
+
+    const titleText =
+      tail === undefined
+        ? `全 ${n} 本（下スライダー・ドラッグで範囲変更）`
+        : `末尾 ${n} 本のプレビュー`
+
     return {
       title: {
-        text: `末尾 ${slice.length} 本のプレビュー`,
+        text: titleText,
         left: 'center',
         textStyle: { fontSize: 13 },
       },
       tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
-      grid: { left: '8%', right: '5%', top: 40, bottom: 48 },
+      grid: { left: '8%', right: '5%', top: 40, bottom: 64 },
+      dataZoom: [
+        {
+          type: 'inside',
+          xAxisIndex: 0,
+          start: dzStart,
+          end: dzEnd,
+        },
+        {
+          type: 'slider',
+          xAxisIndex: 0,
+          start: dzStart,
+          end: dzEnd,
+          bottom: 8,
+          height: 22,
+        },
+      ],
       xAxis: {
         type: 'time',
       },
@@ -43,7 +77,7 @@ export default function OhlcCandlestickPreview({ rows, tail = 200 }: OhlcCandles
         },
       ],
     }
-  }, [data, slice.length])
+  }, [data, slice.length, tail])
 
   if (!data.length) {
     return <p className="msg-muted">ローソク表示に十分なデータがありません。</p>
