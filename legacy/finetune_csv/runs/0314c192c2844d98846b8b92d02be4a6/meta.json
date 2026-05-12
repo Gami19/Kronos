@@ -1,0 +1,15 @@
+{
+  "job_id": "0314c192c2844d98846b8b92d02be4a6",
+  "status": "running",
+  "created_at": "2026-05-06T15:04:47Z",
+  "updated_at": "2026-05-06T15:04:47Z",
+  "data_path": "/Users/ikegamikouhei/develop/Kronos/data/8058.T/import_5m_20260318_20260506.csv",
+  "train_last_timestamp": "2026-05-01T06:20:00",
+  "config_path": "/Users/ikegamikouhei/develop/Kronos/finetune_csv/runs/0314c192c2844d98846b8b92d02be4a6/config.yaml",
+  "exit_code": null,
+  "tokenizer_best_model_path": null,
+  "basemodel_best_model_path": null,
+  "error_message": null,
+  "device": "cpu",
+  "pid": 49425
+}
