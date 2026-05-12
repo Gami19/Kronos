@@ -5,6 +5,7 @@ import type {
   PredictionDetailRecord,
   PredictionResultListItem,
 } from '../api/types'
+import AccuracyMetricsPanel from '../components/AccuracyMetricsPanel'
 import ComparisonPanel from '../components/ComparisonPanel'
 import EChartsCandlestick from '../components/EChartsCandlestick'
 import { formatUserFacingError } from '../utils/formatError'
@@ -215,11 +216,18 @@ export default function HistoryPage() {
               <p className="msg-muted">表示できる OHLC データがありません。</p>
             )}
             {showComparison && (
-              <ComparisonPanel
-                predictionType={detail.prediction_type}
-                predictions={preds}
-                actuals={acts}
-              />
+              <>
+                <AccuracyMetricsPanel
+                  predictionType={detail.prediction_type}
+                  predictions={preds}
+                  actuals={acts}
+                />
+                <ComparisonPanel
+                  predictionType={detail.prediction_type}
+                  predictions={preds}
+                  actuals={acts}
+                />
+              </>
             )}
           </>
         )}

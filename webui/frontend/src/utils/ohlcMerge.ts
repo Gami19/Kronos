@@ -3,6 +3,11 @@ import type { OhlcRow } from '../api/types'
 /** [timeMs, open, close, low, high] — ECharts candlestick（time 軸）用 */
 export type CandleTuple = [number, number, number, number, number]
 
+/** 連続表示（category 軸）用: ECharts の [open, close, low, high] */
+export function pickOhlcOnly(t: CandleTuple): [number, number, number, number] {
+  return [t[1], t[2], t[3], t[4]]
+}
+
 export function rowToTuple(row: OhlcRow): CandleTuple | null {
   if (!row.timestamp) return null
   const t = Date.parse(row.timestamp)

@@ -87,3 +87,4 @@ docs/
 
 kronos-small/
 tokenizer-base/
+prediction_*.json

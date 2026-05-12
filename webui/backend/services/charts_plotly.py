@@ -44,7 +44,12 @@ def create_prediction_chart(df, pred_df, lookback, pred_len, actual_df=None, his
 
     pred_timestamps = None
     if has_pred:
-        if "timestamps" in df.columns and len(historical_df) > 0:
+        if len(pred_df) > 0 and (
+            isinstance(pred_df.index, pd.DatetimeIndex)
+            or pd.api.types.is_datetime64_any_dtype(pred_df.index)
+        ):
+            pred_timestamps = pred_df.index
+        elif "timestamps" in df.columns and len(historical_df) > 0:
             last_timestamp = historical_df["timestamps"].iloc[-1]
             time_diff = (
                 df["timestamps"].iloc[1] - df["timestamps"].iloc[0]
@@ -61,7 +66,9 @@ def create_prediction_chart(df, pred_df, lookback, pred_len, actual_df=None, his
 
     actual_timestamps = None
     if has_actual:
-        if "timestamps" in df.columns:
+        if "timestamps" in actual_df.columns:
+            actual_timestamps = actual_df["timestamps"]
+        elif "timestamps" in df.columns:
             if pred_timestamps is not None:
                 actual_timestamps = pred_timestamps
             elif len(historical_df) > 0:

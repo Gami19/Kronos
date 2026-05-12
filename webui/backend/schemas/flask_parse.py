@@ -30,7 +30,7 @@ def parse_json_body(
     *,
     force: bool = False,
     silent: bool = True,
-    error_format: Literal["load_data", "import_market"] = "load_data",
+    error_format: Literal["load_data", "import_market", "predict"] = "load_data",
 ) -> tuple[T | None, tuple[Any, int] | None]:
     """
     Parse JSON object body into ``model``.
@@ -50,6 +50,8 @@ def parse_json_body(
         msg = _first_user_message(e, default="リクエストの形式が正しくありません")
         if error_format == "import_market":
             return None, (jsonify({"success": False, "error": msg}), 400)
+        if error_format == "predict":
+            return None, (jsonify({"error": msg}), 400)
         return None, (jsonify({"error": msg}), 400)
 
 

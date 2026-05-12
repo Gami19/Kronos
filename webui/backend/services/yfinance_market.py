@@ -10,6 +10,8 @@ import yfinance as yf
 
 from model.kronos_amount import amount_log1p_typical_volume_series
 
+from backend.services.yfinance_limits import validate_yfinance_range
+
 # GET /api/market-history: query validation (aligned with frontend intervals/periods)
 MARKET_HISTORY_ALLOWED_INTERVALS = frozenset(
     {
@@ -138,6 +140,94 @@ def fetch_yfinance_hist_df(
                 "ticker": ticker,
                 "interval": interval,
                 "period": period,
+                "warnings": warnings_list,
+            },
+        }
+
+    return hist, None
+
+
+def fetch_yfinance_hist_df_range(
+    ticker: str,
+    interval: str,
+    start: str,
+    end: str,
+) -> tuple[pd.DataFrame | None, dict[str, Any] | None]:
+    """
+    Fetch OHLCV history via yfinance with explicit start/end (inclusive-style dates as strings).
+
+    On success: (hist, None). On failure: (None, err) with same shape as fetch_yfinance_hist_df.
+    """
+    warnings_list: list[str] = []
+
+    if interval not in MARKET_HISTORY_ALLOWED_INTERVALS:
+        allowed = ", ".join(sorted(MARKET_HISTORY_ALLOWED_INTERVALS))
+        return None, {
+            "status": 400,
+            "body": {
+                "success": False,
+                "error": f"無効な interval です。次のいずれかを指定してください: {allowed}",
+                "ticker": ticker,
+                "interval": interval,
+                "start": start,
+                "end": end,
+                "warnings": warnings_list,
+            },
+        }
+
+    ok, vmsg = validate_yfinance_range(interval, start, end)
+    if not ok:
+        return None, {
+            "status": 400,
+            "body": {
+                "success": False,
+                "error": vmsg or "日付レンジが制限を満たしません",
+                "ticker": ticker,
+                "interval": interval,
+                "start": start,
+                "end": end,
+                "warnings": warnings_list,
+            },
+        }
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            t = yf.Ticker(ticker)
+            hist = t.history(start=start, end=end, interval=interval, auto_adjust=False)
+        except Exception as e:
+            return None, {
+                "status": 502,
+                "body": {
+                    "success": False,
+                    "error": yfinance_exception_user_message(e),
+                    "ticker": ticker,
+                    "interval": interval,
+                    "start": start,
+                    "end": end,
+                    "warnings": warnings_list,
+                },
+            }
+
+    if hist is None or hist.empty:
+        hint_intraday = ""
+        if interval.endswith("m") or interval.endswith("h"):
+            hint_intraday = (
+                " 分足・時間足は取得できる期間に上限があることが多く、長いレンジでは空になりやすいです。"
+                "期間を短くするか、日足（interval=1d）を試してください。"
+            )
+        return None, {
+            "status": 422,
+            "body": {
+                "success": False,
+                "error": (
+                    "データが取得できませんでした（ティッカー・期間・間隔の組み合わせを確認してください）。"
+                    + hint_intraday
+                ),
+                "ticker": ticker,
+                "interval": interval,
+                "start": start,
+                "end": end,
                 "warnings": warnings_list,
             },
         }
