@@ -12,6 +12,7 @@ if str(_WEBUI) not in sys.path:
     sys.path.insert(0, str(_WEBUI))
 
 pytest.importorskip("pandas")
+pytest.importorskip("einops")
 from backend.services import yfinance_market as yfm  # noqa: E402
 
 
@@ -29,3 +30,13 @@ def test_fetch_rejects_bad_period():
     assert err is not None
     assert err["status"] == 400
     assert "period" in err["body"]["error"]
+
+
+def test_fetch_range_rejects_before_yfinance_when_span_invalid():
+    """validate_yfinance_range が先に効き、外部 I/O に行かないこと。"""
+    hist, err = yfm.fetch_yfinance_hist_df_range("8058.T", "1m", "2000-01-01", "2000-01-15")
+    assert hist is None
+    assert err is not None
+    assert err["status"] == 400
+    assert err["body"].get("success") is False
+    assert "1m" in err["body"]["error"]

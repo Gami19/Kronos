@@ -27,6 +27,7 @@ import type {
   ValidateDataResponse,
 } from '../api/types'
 import BacktestEquityChart from '../components/BacktestEquityChart'
+import AccuracyMetricsPanel from '../components/AccuracyMetricsPanel'
 import ComparisonPanel from '../components/ComparisonPanel'
 import EChartsCandlestick from '../components/EChartsCandlestick'
 import OhlcCandlestickPreview from '../components/OhlcCandlestickPreview'
@@ -1396,11 +1397,18 @@ export default function FinetunePage() {
             {predictResult?.has_comparison &&
               predictResult.prediction_results &&
               predictResult.actual_data && (
-                <ComparisonPanel
-                  predictionType={predictResult.prediction_type}
-                  predictions={predictResult.prediction_results}
-                  actuals={predictResult.actual_data}
-                />
+                <>
+                  <AccuracyMetricsPanel
+                    predictionType={predictResult.prediction_type}
+                    predictions={predictResult.prediction_results}
+                    actuals={predictResult.actual_data}
+                  />
+                  <ComparisonPanel
+                    predictionType={predictResult.prediction_type}
+                    predictions={predictResult.prediction_results}
+                    actuals={predictResult.actual_data}
+                  />
+                </>
               )}
           </section>
         </div>

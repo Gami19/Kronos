@@ -99,6 +99,7 @@ def data_import_market():
     ticker_id = body.ticker_id
     interval = body.interval or "5m"
     period = body.period or "5d"
+    use_range = body.start is not None and body.end is not None
 
     if not ticker_id:
         return jsonify({'success': False, 'error': 'ticker_id を指定してください'}), 400
@@ -107,7 +108,12 @@ def data_import_market():
     if not TICKER_FOLDER_PATTERN.fullmatch(ticker_id):
         return jsonify({'success': False, 'error': '無効な ticker_id です（英数字・._- で始まる識別子）'}), 400
 
-    hist, err = yfinance_market_svc.fetch_yfinance_hist_df(ticker_id, interval, period)
+    if use_range:
+        start_s = body.start
+        end_s = body.end
+        hist, err = yfinance_market_svc.fetch_yfinance_hist_df_range(ticker_id, interval, start_s, end_s)
+    else:
+        hist, err = yfinance_market_svc.fetch_yfinance_hist_df(ticker_id, interval, period)
     if err:
         return jsonify(err['body']), err['status']
 
@@ -124,7 +130,14 @@ def data_import_market():
     ticker_dir = os.path.join(base, ticker_id)
     os.makedirs(ticker_dir, exist_ok=True)
 
-    fname = f"import_{tjo.safe_import_filename_token(interval)}_{tjo.safe_import_filename_token(period)}.csv"
+    if use_range:
+        start_norm = pd.to_datetime(start_s)
+        end_norm = pd.to_datetime(end_s)
+        start_token = tjo.safe_import_filename_token(pd.Timestamp(start_norm).strftime("%Y%m%d"))
+        end_token = tjo.safe_import_filename_token(pd.Timestamp(end_norm).strftime("%Y%m%d"))
+        fname = f"import_{tjo.safe_import_filename_token(interval)}_{start_token}_{end_token}.csv"
+    else:
+        fname = f"import_{tjo.safe_import_filename_token(interval)}_{tjo.safe_import_filename_token(period)}.csv"
     file_path = os.path.join(ticker_dir, fname)
     out_df.to_csv(file_path, index=False)
 

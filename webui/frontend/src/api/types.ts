@@ -290,6 +290,7 @@ export interface PredictRequest {
   top_p: number
   sample_count: number
   start_date?: string
+  end_date?: string
 }
 
 export interface PredictResponse {

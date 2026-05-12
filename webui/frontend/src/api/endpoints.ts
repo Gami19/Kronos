@@ -57,6 +57,9 @@ export function importMarket(body: {
   ticker_id: string
   interval?: string
   period?: string
+  /** 日付レンジ取り込み。指定時は period はサーバで無視される */
+  start?: string
+  end?: string
 }): Promise<ImportMarketResponse> {
   return apiPost<ImportMarketResponse>('/api/data/import-market', body)
 }

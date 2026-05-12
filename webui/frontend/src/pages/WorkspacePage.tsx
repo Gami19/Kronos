@@ -7,7 +7,9 @@ import {
   marketHistory,
   predict,
 } from '../api/endpoints'
+import MarketRangePicker from '../components/MarketRangePicker'
 import type { AvailableModelsResponse, LoadDataResponse, OhlcRow, PredictResponse } from '../api/types'
+import AccuracyMetricsPanel from '../components/AccuracyMetricsPanel'
 import ComparisonPanel from '../components/ComparisonPanel'
 import EChartsCandlestick from '../components/EChartsCandlestick'
 import OhlcCandlestickPreview from '../components/OhlcCandlestickPreview'
@@ -19,12 +21,15 @@ import TimeWindowSlider, {
 } from '../components/TimeWindowSlider'
 import { formatUserFacingError } from '../utils/formatError'
 import { mergeOhlcSeries } from '../utils/ohlcMerge'
+import type { ChartTimeMode } from '../utils/ohlcGap'
 import { useTicker } from '../context/TickerContext'
 
 type Banner = { kind: 'success' | 'error' | 'info' | 'warning'; text: string }
 
 const PREVIEW_ROWS = 500
 const HISTORY_PERIODS = ['5d', '30d', '60d', '1mo'] as const
+/** 市場履歴は 5m 取得のため、ギャップ検出の dt に明示指定 */
+const MARKET_HISTORY_INTERVAL_MS = 5 * 60 * 1000
 
 export default function WorkspacePage() {
   const {
@@ -60,6 +65,8 @@ export default function WorkspacePage() {
   const [historyPeriod, setHistoryPeriod] = useState<(typeof HISTORY_PERIODS)[number]>('30d')
   const [marketRows, setMarketRows] = useState<OhlcRow[]>([])
   const [marketError, setMarketError] = useState<string | null>(null)
+
+  const [chartMode, setChartMode] = useState<ChartTimeMode>('continuous')
 
   const showBanner = useCallback((b: Banner, ms = 6000) => {
     setBanner(b)
@@ -323,6 +330,21 @@ export default function WorkspacePage() {
             データを読み込む
           </button>
 
+          <MarketRangePicker
+            tickerId={selectedTickerId}
+            disabled={busy || tickerLoading}
+            onImported={async () => {
+              if (!selectedTickerId) return
+              try {
+                const files = await getDataFiles(selectedTickerId)
+                setDataFiles(files)
+                showBanner({ kind: 'success', text: '市場データを保存し、ファイル一覧を更新しました' })
+              } catch (e) {
+                showBanner({ kind: 'error', text: formatUserFacingError(e) })
+              }
+            }}
+          />
+
           {dataInfo && (
             <div className="data-info-block">
               <h3>データ情報</h3>
@@ -404,6 +426,29 @@ export default function WorkspacePage() {
       </aside>
 
       <div className="workspace__main">
+        <div className="panel chart-mode-toolbar" role="group" aria-label="チャート表示モード">
+          <span className="msg-muted small" style={{ marginRight: 12 }}>
+            チャート表示（プレビュー・統合ローソク共通）
+          </span>
+          <button
+            type="button"
+            className={chartMode === 'continuous' ? 'btn btn-primary' : 'btn btn-secondary'}
+            aria-pressed={chartMode === 'continuous'}
+            onClick={() => setChartMode('continuous')}
+          >
+            連続表示
+          </button>
+          <button
+            type="button"
+            className={chartMode === 'real' ? 'btn btn-primary' : 'btn btn-secondary'}
+            style={{ marginLeft: 8 }}
+            aria-pressed={chartMode === 'real'}
+            onClick={() => setChartMode('real')}
+          >
+            実時間
+          </button>
+        </div>
+
         <section className="panel">
           <h2>データプレビュー（先頭 {PREVIEW_ROWS} 行）</h2>
           {!ohlcRows.length ? (
@@ -438,7 +483,7 @@ export default function WorkspacePage() {
                 </table>
               </div>
               <h3>ローソクプレビュー（全件・下スライダーで移動）</h3>
-              <OhlcCandlestickPreview rows={ohlcRows} />
+              <OhlcCandlestickPreview rows={ohlcRows} mode={chartMode} />
             </>
           )}
         </section>
@@ -481,17 +526,26 @@ export default function WorkspacePage() {
                 subtitle={`${yfinanceDisplaySymbol} · 5m · ${historyPeriod}`}
                 height={520}
                 showDataZoom
+                mode={chartMode}
+                intervalMs={MARKET_HISTORY_INTERVAL_MS}
               />
             </>
           )}
           {predictResult?.has_comparison &&
             predictResult.prediction_results &&
             predictResult.actual_data && (
-              <ComparisonPanel
-                predictionType={predictResult.prediction_type}
-                predictions={predictResult.prediction_results}
-                actuals={predictResult.actual_data}
-              />
+              <>
+                <AccuracyMetricsPanel
+                  predictionType={predictResult.prediction_type}
+                  predictions={predictResult.prediction_results}
+                  actuals={predictResult.actual_data}
+                />
+                <ComparisonPanel
+                  predictionType={predictResult.prediction_type}
+                  predictions={predictResult.prediction_results}
+                  actuals={predictResult.actual_data}
+                />
+              </>
             )}
         </section>
       </div>
