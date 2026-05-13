@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kronos-py"
+version = "0.1.0"
+description = "kronos-py API (FastAPI) — Kronos 株価予測アプリ"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "httpx>=0.27.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kronos_py"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/kronos_py"]

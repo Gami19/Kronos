@@ -80,7 +80,7 @@ tmp/
 
 data/
 finetune_csv/runs/
-docs/*
+docs/
 !docs/追加機能フォルダ/
 !docs/追加機能フォルダ/**
 .pytest_cache/
